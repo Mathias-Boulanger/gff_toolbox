@@ -23,7 +23,7 @@ elif [[ $(wc -l $DATA) = "0 ${DATA}" ]]; then
 elif [[ $(awk '{FS="\t"}{print NF}' $DATA | uniq | wc -l) -ne 1  ]]; then
 	printf "%s\n" "Error: some lines of your file does not present 9 columns!" ""
 elif [[ $(awk '{FS="\t"}{print NF}' $DATA | uniq) -ne 9 ]]; then
-	printf
+	printf "%s\n" "Error: your file does not present 9 columns!" ""
 fi
 
 ##Start to work
@@ -34,6 +34,7 @@ fi
 printf "%s\n" "" "Year, let's sort gff files..." ""
 r=0
 while true; do
+	#Choice of the tool
 	while true; do
 		#Remind of gff struture
 		HEADER="%-10s\t %-10s\t %-14s\t %-5s\t %-5s\t %-5s\t %-6s\t %-12s\t %-66s\n"
@@ -50,17 +51,16 @@ while true; do
 		"NC_XXXXXX" "BestRefSeq" "CDS" "50" "7500" "." "+" "1" "ID=idX;...;gbkey=CDS;gene=XXX;...;..."
 		printf "%s\n" "" "If you would like more informations on gff file structure visit this web site: http://gmod.org/wiki/GFF3" ""
 		
-		#choice0: TOOL BOX
-
+		#choice
 		printf "%s\n" "" "Which tool do you would like to use on ${DATA} ?" "" 
 		printf "%s\n" "=============== Tools specific to human genome sorting ===============" ""
 		printf "%s\n" "1 - Classical Human Chromosomes sorter" "2 - GFF to BED file" "3 - Promoter regions extractor (in development)" ""
 		printf "%s\n" "======================= Tools to sort gff file =======================" ""
-		printf "%s\n" "3 - Sort by sources present in my file (column 2)" "4 - Sort by type of region present in my file (column 3)" "5 - Sort by attributes (IDs, gbkey, biotype, specific gene) (column 9)" "6 - Gene name extractor (in development)" "7 - Isoform inspector (in development)" ""
+		printf "%s\n" "4 - Sort by sources present in my file (column 2)" "5 - Sort by type of region present in my file (column 3)" "6 - Sort by attributes (IDs, gbkey, biotype, specific gene) (column 9) (in development)" "7 - Gene name extractor (in development)" "8 - Isoform inspector (in development)" ""
 		printf "%s\n %s\n \r%s" "If you would like to quite, please answer 'q' or 'quite'" "" "Please enter the number of the choosen tool: "
 		read ANSWER
 		case $ANSWER in
-			[1-5] )
+			[1-8] )
 				printf "\n"
 				t=$ANSWER
 				break;;
@@ -250,19 +250,22 @@ while true; do
 				printf "\n"
 				printf "%s\n" "" "" "Your file has been sorted by the main human chromosomes." ""
 			fi
-			r=$r+1
-			printf $r "\n"
+			((r++))
 			DATA=${NAMEFILE2}
 			break
 		fi
+		break
 	done
 
 	##Tool2: GFF to BED file
 	while true; do
 		if [[ t -eq 2 ]]; then
 			printf
-			r=$r+1
+			((r++))
 			DATA=${NAMEFILE}
+			break
+		else
+			break
 		fi
 	done
 
@@ -271,16 +274,18 @@ while true; do
 	while true; do
 		if [[ t -eq 3 ]]; then
 			printf
-			r=$r+1
+			((r++))
 			DATA=${NAMEFILE}
+			break
+		else
+			break
 		fi
 	done
 
-
-	##Tool4: Sort by sources present in my file (column 2)
+	##Tool4: Sort by sources
 	while true; do
 		if [[ t -eq 4 ]]; then
-			
+			printf "\033c"
 			printf "%s\n" "" "This are sources present in your file:" "" "Number_of_line	Source" "$(awk 'BEGIN{FS="\t"}{print$2}' $DATA | sort | uniq -c)" "" &
 			awk 'BEGIN{FS="\t";OFS="\t"}{print$2}' $DATA | sort | uniq | sed 's/ /_/g' > .sources.tmp & PID=$!
 			i=0 &
@@ -290,7 +295,10 @@ while true; do
 				sleep .1
 			done
 			if [[ $(wc -l .sources.tmp) = "1 .sources.tmp" ]]; then
-				if [[ $(wc -c .sources.tmp) = "1 .sources.tmp" ]]; then #ATTENTION SI 1 SOURCE ET 1 CARATERE = ERROR
+				if [[ $(wc -c .sources.tmp) = "1 .sources.tmp" ]]; then 
+
+					#ATTENTION SI 1 SOURCE avec 1 CARATERE = ERROR
+
 					printf "%s\n" "Error: No source has been found!" "Please check if your file present gff structure."
 					rm .sources.tmp
 					exit 1
@@ -320,15 +328,15 @@ while true; do
 					printf $SOURCETOSORT > .sourcetosort.tmp				
 					SOURCETOSORT2="$(sed 's/_/ /g' .sourcetosort.tmp)"
 					rm .sourcetosort.tmp
-					NAMEFILE3=${DATA%%.*}_${SOURCETOSORT}Sorted.$EXTENSION
-					if [[ -f $NAMEFILE3 ]]; then
+					NAMEFILE=${DATA%%.*}_${SOURCETOSORT}Sorted.$EXTENSION
+					if [[ -f $NAMEFILE ]]; then
 					while true; do
-						printf "The directory already present a file ("$NAMEFILE3") sorted by ""$SOURCETOSORT2"" \nDo you want to sort again? (Y/n)\n"
+						printf "The directory already present a file ("$NAMEFILE") sorted by ""$SOURCETOSORT2"" \nDo you want to sort again? (Y/n)\n"
 						read ANSWER
 						printf "\n"
 						case $ANSWER in
 							[yY][eE][sS]|[yY] ) 
-							awk 'BEGIN{FS="\t"; OFS="\t"}{ if ($2=="'"$SOURCETOSORT2"'") print $0}' $DATA > $NAMEFILE3 & PID=$!
+							awk 'BEGIN{FS="\t"; OFS="\t"}{ if ($2=="'"$SOURCETOSORT2"'") print $0}' $DATA > $NAMEFILE & PID=$!
 							i=0 &
 							while kill -0 $PID 2>/dev/null; do
 								i=$(( (i+1) %4 ))
@@ -346,7 +354,7 @@ while true; do
 						esac
 					done
 					else
-						awk 'BEGIN{FS="\t"; OFS="\t"}{ if ($2=="'"$SOURCETOSORT2"'") print $0}' $DATA > $NAMEFILE3 & PID=$!
+						awk 'BEGIN{FS="\t"; OFS="\t"}{ if ($2=="'"$SOURCETOSORT2"'") print $0}' $DATA > $NAMEFILE & PID=$!
 						i=0 &
 						while kill -0 $PID 2>/dev/null; do
 							i=$(( (i+1) %4 ))
@@ -356,25 +364,29 @@ while true; do
 						printf "\n"
 						printf "\n" "Ok, your file has been sorted by the source: " "$SOURCETOSORT2" "\n" "\n"
 					fi
-					z=2
-		    		break
+					break
 				fi
 			done
-		
-
-
+			((r++))
+			DATA=${NAMEFILE}
+			break
 		else
-			r=0
 			break
 		fi
 	done
 
+	#Tool 5 : Sort by type of region
 	while true; do
-				
-	    break
+		if [[ t -eq 5 ]]; then
+			printf
+			((r++))
+			DATA=${NAMEFILE}
+			break
+		else
+			break
+		fi
 	done
 
-	#Choice3 : Work with annotated file filtered by region features 
 
 	while true; do
 		printf "Do you want to work with a specific region feature? (Y/n)\n"
@@ -382,13 +394,6 @@ while true; do
 		printf "\n"
 		case $ANSWER in
 			[yY][eE][sS]|[yY] ) 
-			if [[ $z -eq 0 ]]; then
-				NAMEFILETOSORT=${DATA}
-			elif [[ $z -eq 1 ]]; then
-				NAMEFILETOSORT=$NAMEFILE2
-			elif [[ $z -eq 2 ]]; then
-				NAMEFILETOSORT=$NAMEFILE3
-			fi
 			printf "%s\n" "" "" "This are regions present in your file:" "" "Number_of_line	Region" "$(awk 'BEGIN{FS="\t"}{print$3}' $NAMEFILETOSORT | sort | uniq -c)" "" &
 			awk 'BEGIN{FS="\t";OFS="\t"}{print$3}' $NAMEFILETOSORT | sort | uniq | sed 's/ /_/g' > .regions.tmp& PID=$!
 			i=0 &
@@ -430,15 +435,15 @@ while true; do
 					printf $REGIONTOSORT > .regiontosort.tmp
 					REGIONTOSORT2="$(sed 's/_/ /g' .regiontosort.tmp)"
 					rm .regiontosort.tmp
-					NAMEFILE4=${NAMEFILETOSORT%%.*}_${REGIONTOSORT}Sorted.$EXTENSION
-					if [[ -f $NAMEFILE4 ]]; then
+					NAMEFILE=${NAMEFILETOSORT%%.*}_${REGIONTOSORT}Sorted.$EXTENSION
+					if [[ -f $NAMEFILE ]]; then
 					while true; do
-						printf "The directory already present a file ("$NAMEFILE4") sorted by ""$REGIONTOSORT2"".\nDo you want to sort again? (Y/n)\n"
+						printf "The directory already present a file ("$NAMEFILE") sorted by ""$REGIONTOSORT2"".\nDo you want to sort again? (Y/n)\n"
 						read ANSWER
 						printf "\n"
 						case $ANSWER in
 							[yY][eE][sS]|[yY] ) 
-							awk 'BEGIN{FS="\t";OFS="\t"}{ if ($3=="'"$REGIONTOSORT2"'") print $0}' $NAMEFILETOSORT > $NAMEFILE4 & PID=$!
+							awk 'BEGIN{FS="\t";OFS="\t"}{ if ($3=="'"$REGIONTOSORT2"'") print $0}' $NAMEFILETOSORT > $NAMEFILE & PID=$!
 							i=0 &
 							while kill -0 $PID 2>/dev/null; do
 								i=$(( (i+1) %4 ))
@@ -456,7 +461,7 @@ while true; do
 	    				esac
 					done
 					else
-						awk 'BEGIN{FS="\t";OFS="\t"}{ if ($3=="'"$REGIONTOSORT2"'") print $0}' $NAMEFILETOSORT > $NAMEFILE4 & PID=$!
+						awk 'BEGIN{FS="\t";OFS="\t"}{ if ($3=="'"$REGIONTOSORT2"'") print $0}' $NAMEFILETOSORT > $NAMEFILE & PID=$!
 						i=0 &
 						while kill -0 $PID 2>/dev/null; do
 							i=$(( (i+1) %4 ))
@@ -683,5 +688,41 @@ while true; do
 	        * ) 
 			printf "%s\n" "" "Please answer yes or no." "";;
 	    esac
+	done
+
+	#Tool 6
+	while true; do
+		if [[ t -eq 6 ]]; then
+			printf
+			((r++))
+			DATA=${NAMEFILE}
+			break
+		else
+			break
+		fi
+	done
+
+	#Tool 7
+	while true; do
+		if [[ t -eq 7 ]]; then
+			printf
+			((r++))
+			DATA=${NAMEFILE}
+			break
+		else
+			break
+		fi
+	done
+
+	#Tool 8
+	while true; do
+		if [[ t -eq 8 ]]; then
+			printf
+			((r++))
+			DATA=${NAMEFILE}
+			break
+		else
+			break
+		fi
 	done
 done
