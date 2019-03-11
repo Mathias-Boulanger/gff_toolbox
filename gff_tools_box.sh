@@ -636,7 +636,7 @@ while true; do
 				printf "\n${ORANGE}WARNING:${NOCOLOR} The file contain multiple type of region!\nPlease make sure that the content of your file is gene sequences to be sure to extract promoter regions.\nYou can use the tool 'type of region extractor' to extract gene region from your file.\n\n"
 			fi
 			if [[ $TSS -eq 0 ]]; then
-				printf "\n${ORANGE}WARNING:${NOCOLOR} This tool has been developed to extract promoter regions from Transcription Start Site (TSS) depending of the strand of the gene.\nFor strand +, the TSS is the start point of the sequence, while for Strand -, the TSS is the end point of the sequence.\nIf the strand is not specify, the TSS is the start point of the sequence.\n"
+				printf "\n${ORANGE}WARNING:${NOCOLOR} This tool has been developed to extract promoter regions from Transcription Start Site (TSS) depending of the strand of the gene.\nFor strand +, the TSS is the start point of the sequence, while for Strand -, the TSS is the end point of the sequence.\nIf the strand is not specified, the TSS is the start point of the sequence.\n"
 				NAMEFILE2=${DATA%%.*}_TSS.${EXTENSION}
 				if [[ -f $NAMEFILE2 ]]; then
 					while true; do
