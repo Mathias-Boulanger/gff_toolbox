@@ -64,5 +64,5 @@ TOOL 7: GFF to BED file
 - This tool is able to transform the gff file in bed3 and/or bed6 file. If human chromosome are named with 'NC_XXXXXX.X', this tool correct it in 'chrX'.
 
 
-Thank you to use GFF tools box\n
+Thank you to use GFF tools box!
 If you got any problems when you used this script or if you have any comments on it, please feel free to contact mathias.boulanger.17@hotmail.com
