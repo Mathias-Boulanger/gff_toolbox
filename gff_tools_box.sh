@@ -1,5 +1,5 @@
 #!/bin/bash
-#Made by Mathias Boulanger - 2019/03/06
+#Made by Mathias Boulanger - 2019/03/11
 #gff_tools_box.sh
 #version 1.0
 #use on gff file structure
