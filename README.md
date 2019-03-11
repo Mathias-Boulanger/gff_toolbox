@@ -1,4 +1,5 @@
-# gff_tools_box
+gff tools box
+=============
 
 This tool has been developed to modify, transform or extract information from genome annotation files (gff) without coding skills. Gff tools box is a simple bash script that you can use on linux or macOS environment. The usage of the script is quite easy, you have just to call a gff file in argument with it. (ex: bash gff_tools_box.sh my_gff_file.gff)
 
@@ -6,8 +7,11 @@ Before to start, this script is able to check its ability to work (control of th
 
 
 TOOL 1: Classical Human Chromosomes filter (Specific to human genome)
-- This tool is able to recognise classical human chromosome names (NC_XXXXXX.X or chrX) in the SeqIDs column. 
-You will have the choice to extract sequences with or without those names. 
+---------------------------------------------------------------------
+This tool is able to recognise classical human chromosome names (NC_XXXXXX.X or chrX) in the SeqIDs column.
+
+You will have the choice to extract sequences with or without those names.
+
 If the file presents both nomenclature, you will have the choice to homogenise chromosomes names by 'NC' or 'chr'.
 
 
