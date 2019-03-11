@@ -37,7 +37,7 @@ TOOL 5: Attributes explorer (column 9) (specific to gff3 structure)
 -------------------------------------------------------------------
 First this tool is able to list all different kinds of attributes and you can choose to extract the list of contents of this attribute or extract all lines which present this attribute. (attribute exemples: ID=; gbkey=; name=; gene=; gene_biotype=; parental=; etc...)
 
-List extraction:
+- List extraction:
 First, the tool will create a text file with one content of a specific attribute per line.
 	ex: gene_biotype=coding_protein; gene_biotype=tRNA; gene_biotype=coding_protein; will give:
 	
