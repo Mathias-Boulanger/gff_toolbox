@@ -1,7 +1,7 @@
 #!/bin/bash
-#Made by Mathias Boulanger - 2019/03/06
+#Made by Mathias Boulanger - 2019/03/25
 #gff_toolbox.sh
-#version 1.0
+#version 1.1
 #use on gff file structure
 
 ARGS=1				#The script need 1 argument
@@ -1565,11 +1565,15 @@ while true; do
 											printf "\n"
 											case $ANSWER in
 												[$(seq 1 ${NUMLINE})] )
-													LINETODEL=$(sed -n ${ANSWER}'p' /tmp/${NAMEPROG##*/}_lineToDel.tmp)
-													eval LINETODEL=$((${LINETODEL}-${k}))
-													sed -i -e $LINETODEL'd' $NAMEFILE
+													sed -i -e ${ANSWER}'d' /tmp/${NAMEPROG##*/}_lineToDel.tmp
+													rm /tmp/${NAMEPROG##*/}_lineToDel.tmp-e
+													for (( t = 1; t < $(cat /tmp/${NAMEPROG##*/}_lineToDel.tmp | wc -l) + 1; t++ )); do
+														LINETODEL=$(sed -n $t'p' /tmp/${NAMEPROG##*/}_lineToDel.tmp)
+														eval LINETODEL=$((${LINETODEL}-${k}))
+														sed -i -e $LINETODEL'd' $NAMEFILE
+														((k++))
+													done
 													printf "OK\n\n"
-													((k++))
 													break
 													;;
 												* )
@@ -1601,11 +1605,15 @@ while true; do
 									printf "\n"
 									case $ANSWER in
 										[$(seq 1 ${NUMLINE})] )
-											LINETODEL=$(sed -n ${ANSWER}'p' /tmp/${NAMEPROG##*/}_lineToDel.tmp)
-											eval LINETODEL=$((${LINETODEL}-${k}))
-											sed -i -e $LINETODEL'd' $NAMEFILE
+											sed -i -e ${ANSWER}'d' /tmp/${NAMEPROG##*/}_lineToDel.tmp
+											rm /tmp/${NAMEPROG##*/}_lineToDel.tmp-e
+											for (( t = 1; t < $(cat /tmp/${NAMEPROG##*/}_lineToDel.tmp | wc -l) + 1; t++ )); do
+												LINETODEL=$(sed -n $t'p' /tmp/${NAMEPROG##*/}_lineToDel.tmp)
+												eval LINETODEL=$((${LINETODEL}-${k}))
+												sed -i -e $LINETODEL'd' $NAMEFILE
+												((k++))
+											done
 											printf "OK\n\n"
-											((k++))
 											break
 											;;
 										* )
@@ -1617,6 +1625,7 @@ while true; do
 							printf "\n\n${GREEN}${DATA##*/}${NOCOLOR} has been filtered manually without duplicates.\n\n"
 						fi
 						rm /tmp/${NAMEPROG##*/}_lineToDel.tmp
+						rm /tmp/${NAMEPROG##*/}_lineToDel.tmp-e
 						break;;
 					[3] )
 						e=1
@@ -1627,6 +1636,9 @@ while true; do
 						;;
 				esac
 			done
+			if [[ -f "${NAMEFILE}-e" ]]; then
+				rm "${NAMEFILE}-e"
+			fi
 			rm /tmp/${NAMEPROG##*/}_duplicate.tmp
 			((r++))
 			if [[ $e -eq 0 ]]; then
