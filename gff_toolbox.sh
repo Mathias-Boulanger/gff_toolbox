@@ -1,15 +1,28 @@
 #!/bin/bash
 #Made by Mathias Boulanger - 2019/05/30
 #gff_toolbox.sh
-#version 1.2
+#version 1.3
 #use on gff file structure
 
-ARGS=1				#The script need 1 argument
-NAMEPROG=$0			#Name of the program
-DATA=$1				#File in argument
-NAMEDATA=${DATA##*/}
-EXTENSION="gff"		#Extension file necessary to run this script
-SPIN='-\|/'			#Waiting characters
+ARGS=1						#The script need 1 argument
+NAMEPROG=$(basename ${0})	#Name of the program
+DATA=$1						#File in argument
+
+##Check the ability to work
+if [[ $# -ne $ARGS ]]; then
+	printf "\n${GREEN}Usage:${NOCOLOR} ${NAMEPROG} target_file.gff\n\n"
+    exit 1
+elif [[ ! -f $DATA ]];then
+	printf "\n${RED}Error:${NOCOLOR} the file '${DATA}' does not exit!\nPlease use an existing file.\n${GREEN}Usage:${NOCOLOR} ${NAMEPROG} target_file.gff\n\n"
+	exit 1
+elif [[ $(wc -l $DATA) = "0 ${DATA}" ]]; then
+	printf "\n${RED}Error:${NOCOLOR} the file is empty!\n\n"
+	exit 1
+fi
+
+NAMEDATA=$(basename ${DATA})
+EXTENSION="gff"				#Extension file necessary to run this script
+SPIN='-\|/'					#Waiting characters
 RED='\033[1;31m'
 GREEN='\033[1;32m'
 ORANGE='\033[0;33m'
@@ -24,7 +37,7 @@ needed_commands="awk sed grep head tail uniq wc rm sleep read kill seq cp mv" ;
 req=0
 while true; do
 	if [[ "$(command -v command)" == "" ]]; then
-		printf "\n${ORANGE}WARNING:${NOCOLOR}the command 'command' not found. Check requirements skipped !\n${NAMEPROG##*/} may not works properly!\n"
+		printf "\n${ORANGE}WARNING:${NOCOLOR}the command 'command' not found. Check requirements skipped !\n${NAMEPROG} may not works properly!\n"
 		break
 	else
 		for requirement in ${needed_commands}; do
@@ -42,22 +55,10 @@ while true; do
 done
 if [[ $req -ne 0 ]]; then
 	if [[ $req -eq 1 ]]; then
-		printf "\n${RED}Error:${NOCOLOR} ${req} command is missing to execute ${NAMEPROG##*/} properly!\nPlease install it on your system to use ${NAMEPROG##*/}\n\n"
+		printf "\n${RED}Error:${NOCOLOR} ${req} command is missing to execute ${NAMEPROG} properly!\nPlease install it on your system to use ${NAMEPROG}\n\n"
 	else
-		printf "\n${RED}Error:${NOCOLOR} ${req} commands are missing to execute ${NAMEPROG##*/} properly!\nPlease install them on your system to use ${NAMEPROG##*/}\n\n"
+		printf "\n${RED}Error:${NOCOLOR} ${req} commands are missing to execute ${NAMEPROG} properly!\nPlease install them on your system to use ${NAMEPROG}\n\n"
 	fi
-	exit 1
-fi
-
-##Check the ability to work
-if [[ $# -ne $ARGS ]]; then
-    printf "\n${GREEN}Usage:${NOCOLOR} ${NAMEPROG##*/} target_file.gff\n\n"
-    exit 1
-elif [[ ! -f $DATA ]];then
-	printf "\n${RED}Error:${NOCOLOR} the file '${DATA}' does not exit!\nPlease use an existing file.\n${GREEN}Usage:${NOCOLOR} ${NAMEPROG##*/} target_file.gff\n\n"
-	exit 1
-elif [[ $(wc -l $DATA) = "0 ${DATA}" ]]; then
-	printf "\n${RED}Error:${NOCOLOR} the file is empty!\n\n"
 	exit 1
 fi
 
@@ -69,7 +70,7 @@ if [[ $COMMENTLINES -ne 0 ]]; then
 	else
 		printf "\n${ORANGE}WARNING:${NOCOLOR} the file present ${COMMENTLINES} commented lines.\n"
 	fi
-	printf "To be sure that will not interfere with ${NAMEPROG##*/}\nA new file without commented lines will be create.\n"
+	printf "To be sure that will not interfere with ${NAMEPROG}\nA new file without commented lines will be create.\n"
 	NAMEFILEUNCOM=${NAMEDATA%%.*}_withoutCommentedLines.$EXTENSION
 	if [[ -f $NAMEFILEUNCOM ]]; then
 		while true; do
@@ -112,12 +113,12 @@ if [[ $COMMENTLINES -ne 0 ]]; then
 fi
 
 ##Trash all tmp file if it is exist
-rm -f /tmp/${NAMEPROG##*/}_*.tmp
+rm -f /tmp/${NAMEPROG}_*.tmp
 
 ##Check the structure of the file
-head -n 1 $DATA | awk 'BEGIN{FS="\t"}{print NF}' | uniq >> /tmp/${NAMEPROG##*/}_check.tmp &&
-tail -n 1 $DATA | awk 'BEGIN{FS="\t"}{print NF}' | uniq >> /tmp/${NAMEPROG##*/}_check.tmp &&
-awk 'BEGIN{FS="\t"}{print NF}' $DATA | uniq | wc -l >> /tmp/${NAMEPROG##*/}_check.tmp & #could be long for big file
+head -n 1 $DATA | awk 'BEGIN{FS="\t"}{print NF}' | uniq >> /tmp/${NAMEPROG}_check.tmp &&
+tail -n 1 $DATA | awk 'BEGIN{FS="\t"}{print NF}' | uniq >> /tmp/${NAMEPROG}_check.tmp &&
+awk 'BEGIN{FS="\t"}{print NF}' $DATA | uniq | wc -l >> /tmp/${NAMEPROG}_check.tmp & #could be long for big file
 PID=$!
 i=0 &
 while kill -0 $PID 2>/dev/null; do
@@ -127,20 +128,20 @@ while kill -0 $PID 2>/dev/null; do
 done
 printf "\n\n"
 printf "%s\n" "$FIRSTLINE" "$LASTLINE" "$NAMEFILEUNCOM"
-if [[ "$(sed -n '1p' /tmp/${NAMEPROG##*/}_check.tmp)" -ne 9 ]]; then
+if [[ "$(sed -n '1p' /tmp/${NAMEPROG}_check.tmp)" -ne 9 ]]; then
 	printf "\n${RED}Error:${NOCOLOR} the first line of the file does not present 9 columns!\n\n"
-	rm /tmp/${NAMEPROG##*/}_check.tmp
+	rm /tmp/${NAMEPROG}_check.tmp
 	exit 1
-elif [[ "$(sed -n '2p' /tmp/${NAMEPROG##*/}_check.tmp)" -ne 9 ]]; then
+elif [[ "$(sed -n '2p' /tmp/${NAMEPROG}_check.tmp)" -ne 9 ]]; then
 	printf "\n${RED}Error:${NOCOLOR} the last line of the file does not present 9 columns!\n\n"
-	rm /tmp/${NAMEPROG##*/}_check.tmp
+	rm /tmp/${NAMEPROG}_check.tmp
 	exit 1
-elif [[ "$(sed -n '3p' /tmp/${NAMEPROG##*/}_check.tmp)" -ne 1  ]]; then
+elif [[ "$(sed -n '3p' /tmp/${NAMEPROG}_check.tmp)" -ne 1  ]]; then
 	printf "%s\n" "Error: some lines of the file does not present 9 columns!" ""
-	rm /tmp/${NAMEPROG##*/}_check.tmp
+	rm /tmp/${NAMEPROG}_check.tmp
 	exit 1
 fi
-rm /tmp/${NAMEPROG##*/}_check.tmp
+rm /tmp/${NAMEPROG}_check.tmp
 
 ##Start to work
 printf "\033c"
@@ -189,9 +190,9 @@ while true; do
 			[qQ]|[qQ][uU][iI][tT] )
 				printf "\033c"
 				printf "%s\n" "" "Thank you for using GFF toolbox!"
-				rm -f /tmp/${NAMEPROG##*/}_*.tmp
+				rm -f /tmp/${NAMEPROG}_*.tmp
 				if [[ $r -ne 0 ]]; then
-					printf "%s\n" "" "All files generated by ${NAMEPROG##*/} have been generated in this current directory."				
+					printf "%s\n" "" "All files generated by ${NAMEPROG} have been generated in this current directory."				
 				fi
 				printf "%s\n" "If you got any problems when using this script or if you have any comments, please feel free to contact mathias_boulanger_17@hotmail.com" ""
 				exit 0
@@ -205,7 +206,7 @@ while true; do
 
 	question_end () {
 	while true; do
-		printf "%s\n" "Do you want to continue to use ${NAMEPROG##*/} with the new generated file? (Y/n)" 
+		printf "%s\n" "Do you want to continue to use ${NAMEPROG} with the new generated file? (Y/n)" 
 		read ANSWER
 		printf "\n"
 		case $ANSWER in
@@ -227,7 +228,7 @@ while true; do
 	while true; do
 		if [[ t -eq 1 ]]; then
 			printf "\033c"
-			printf "${NAMEPROG##*/} consider only main human chromosomes chr1 to chr22, chrX, chrY and chrM named as follow: NC_XXXXXX.X or chrX\n"
+			printf "${NAMEPROG} consider only main human chromosomes chr1 to chr22, chrX, chrY and chrM named as follow: NC_XXXXXX.X or chrX\n"
 			NCDATA=$(grep "^NC" $DATA | wc -l)
 			CHRDATA=$(grep "^chr" $DATA | wc -l)
 			x=0
@@ -248,42 +249,42 @@ while true; do
 							SORTCHR="^NC"
 							NAMEFILE1=${NAMEDATA%%.*}_formatNC.$EXTENSION
 							NCNAMES=( "NC_000001" "NC_000002" "NC_000003" "NC_000004" "NC_000005" "NC_000006" "NC_000007" "NC_000008" "NC_000009" "NC_000010" "NC_000011" "NC_000012" "NC_000013" "NC_000014" "NC_000015" "NC_000016" "NC_000017" "NC_000018" "NC_000019" "NC_000020" "NC_000021" "NC_000022" "NC_000023" "NC_000024" "NC_012920" )
-							cut -f1 $DATA | grep "^NC" | sort | uniq > /tmp/${NAMEPROG##*/}_NC_names.tmp
-							NUMNCNAMES=$(uniq /tmp/${NAMEPROG##*/}_NC_names.tmp | wc -l)
+							cut -f1 $DATA | grep "^NC" | sort | uniq > /tmp/${NAMEPROG}_NC_names.tmp
+							NUMNCNAMES=$(uniq /tmp/${NAMEPROG}_NC_names.tmp | wc -l)
 							for (( i = 0; i < ${NUMNCNAMES}+1; i++ )); do
-								if [[ $(sed -n $i'p' /tmp/${NAMEPROG##*/}_NC_names.tmp | awk '{split($1, subfield, "."); print subfield[1]}' | wc -c) -ne 10 ]]; then
-									sed -i -e $i'd' /tmp/${NAMEPROG##*/}_NC_names.tmp
+								if [[ $(sed -n $i'p' /tmp/${NAMEPROG}_NC_names.tmp | awk '{split($1, subfield, "."); print subfield[1]}' | wc -c) -ne 10 ]]; then
+									sed -i -e $i'd' /tmp/${NAMEPROG}_NC_names.tmp
 								fi
 							done
 							if [[ $NUMNCNAMES -gt 25 ]]; then
-								printf "\n${RED}Error:${NOCOLOR} More than 25 classical human chromosome names (NC_XXXXXX.X) are detected!\nPlease check the SeqIDs content of the file\nThis are NC names found in the file :" "" "$(cat /tmp/${NAMEPROG##*/}_NC_names.tmp)" ""
+								printf "\n${RED}Error:${NOCOLOR} More than 25 classical human chromosome names (NC_XXXXXX.X) are detected!\nPlease check the SeqIDs content of the file\nThis are NC names found in the file :" "" "$(cat /tmp/${NAMEPROG}_NC_names.tmp)" ""
 								e=1
 								break
-							elif [[ $(awk '{split($1, subfield, "."); print subfield[1]}' /tmp/${NAMEPROG##*/}_NC_names.tmp | uniq | wc -l) -ne $(awk '{split($1, subfield, "."); print subfield[1]}' /tmp/${NAMEPROG##*/}_NC_names.tmp | wc -l) ]]; then
-								printf "%s\n" "${RED}Error:${NOCOLOR} One of your NC name present different versions! (ex: NC_000001.1 and NC_000001.2)" "Please check the SeqIDs content of the file" "This are NC names found in the file :" "" "$(cat /tmp/${NAMEPROG##*/}_NC_names.tmp)" ""
+							elif [[ $(awk '{split($1, subfield, "."); print subfield[1]}' /tmp/${NAMEPROG}_NC_names.tmp | uniq | wc -l) -ne $(awk '{split($1, subfield, "."); print subfield[1]}' /tmp/${NAMEPROG}_NC_names.tmp | wc -l) ]]; then
+								printf "%s\n" "${RED}Error:${NOCOLOR} One of your NC name present different versions! (ex: NC_000001.1 and NC_000001.2)" "Please check the SeqIDs content of the file" "This are NC names found in the file :" "" "$(cat /tmp/${NAMEPROG}_NC_names.tmp)" ""
 								e=1
 								break
 							else
 								if [[ $NUMNCNAMES -lt 25 ]]; then
 									N=$(( 25 - ${NUMNCNAMES} ))
 									for (( i = 1; i < ${N}; i++ )); do
-										printf "\n" >> /tmp/${NAMEPROG##*/}_NC_names.tmp
+										printf "\n" >> /tmp/${NAMEPROG}_NC_names.tmp
 									done
 								fi
 								for (( i = 0; i < 26; i++ )); do
-									if [[ "$(sed -n $i'p' /tmp/${NAMEPROG##*/}_NC_names.tmp | awk '{split($1, subfield, "."); print subfield[1]}')" != ${NCNAMES[$i-1]} ]]; then
+									if [[ "$(sed -n $i'p' /tmp/${NAMEPROG}_NC_names.tmp | awk '{split($1, subfield, "."); print subfield[1]}')" != ${NCNAMES[$i-1]} ]]; then
 										sed -i -e $i'i\
 										'${NCNAMES[$i-1]}'
-										' /tmp/${NAMEPROG##*/}_NC_names.tmp
+										' /tmp/${NAMEPROG}_NC_names.tmp
 									fi
 								done
-								sed -i -e '/^$/d' /tmp/${NAMEPROG##*/}_NC_names.tmp
-								rm /tmp/${NAMEPROG##*/}_NC_names.tmp-e
+								sed -i -e '/^$/d' /tmp/${NAMEPROG}_NC_names.tmp
+								rm /tmp/${NAMEPROG}_NC_names.tmp-e
 								for (( i = 1; i < 26; i++ )); do
-									eval NCFILENAMES[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG##*/}_NC_names.tmp)"
+									eval NCFILENAMES[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG}_NC_names.tmp)"
 								done
 							fi
-							rm /tmp/${NAMEPROG##*/}_NC_names.tmp
+							rm /tmp/${NAMEPROG}_NC_names.tmp
 							if [[ -f $NAMEFILE1 ]]; then
 								while true; do
 									printf "\n"
@@ -296,7 +297,7 @@ while true; do
 											for i in $(seq 0 24) ; do
 												A="${NCFILENAMES[$i]}"
 												B="${CHRNAMES[$i]}"
-												awk 'BEGIN{FS="\t"; OFS="\t"}{if ($1=="'$B'") print "'$A'", $2, $3, $4, $5, $6, $7, $8, $9; else print $0}' $NAMEFILE1 > /tmp/${NAMEPROG##*/}_${NAMEFILE1}.tmp && mv /tmp/${NAMEPROG##*/}_${NAMEFILE1}.tmp $NAMEFILE1
+												awk 'BEGIN{FS="\t"; OFS="\t"}{if ($1=="'$B'") print "'$A'", $2, $3, $4, $5, $6, $7, $8, $9; else print $0}' $NAMEFILE1 > /tmp/${NAMEPROG}_${NAMEFILE1}.tmp && mv /tmp/${NAMEPROG}_${NAMEFILE1}.tmp $NAMEFILE1
 											done & PID=$!								
 											i=0 &
 											while kill -0 $PID 2>/dev/null; do
@@ -319,7 +320,7 @@ while true; do
 								for i in $(seq 0 24) ; do
 									A="${NCFILENAMES[$i]}"
 									B="${CHRNAMES[$i]}"
-									awk 'BEGIN{FS="\t"; OFS="\t"}{if ($1=="'$B'") print "'$A'", $2, $3, $4, $5, $6, $7, $8, $9; else print $0}' $NAMEFILE1 > /tmp/${NAMEPROG##*/}_${NAMEFILE1}.tmp && mv /tmp/${NAMEPROG##*/}_${NAMEFILE1}.tmp $NAMEFILE1
+									awk 'BEGIN{FS="\t"; OFS="\t"}{if ($1=="'$B'") print "'$A'", $2, $3, $4, $5, $6, $7, $8, $9; else print $0}' $NAMEFILE1 > /tmp/${NAMEPROG}_${NAMEFILE1}.tmp && mv /tmp/${NAMEPROG}_${NAMEFILE1}.tmp $NAMEFILE1
 								done & PID=$!								
 								i=0 &
 								while kill -0 $PID 2>/dev/null; do
@@ -346,7 +347,7 @@ while true; do
 											for i in $(seq 0 24) ; do
 												A="${NCNAMES[$i]}"
 												B="${CHRNAMES[$i]}"
-												awk 'BEGIN{FS="\t"; OFS="\t"}{split($1, subfield, "."); if (subfield[1]=="'$A'") print "'$B'", $2, $3, $4, $5, $6, $7, $8, $9; else print $0}' $NAMEFILE1 > /tmp/${NAMEPROG##*/}_${NAMEFILE1}.tmp && mv /tmp/${NAMEPROG##*/}_${NAMEFILE1}.tmp $NAMEFILE1
+												awk 'BEGIN{FS="\t"; OFS="\t"}{split($1, subfield, "."); if (subfield[1]=="'$A'") print "'$B'", $2, $3, $4, $5, $6, $7, $8, $9; else print $0}' $NAMEFILE1 > /tmp/${NAMEPROG}_${NAMEFILE1}.tmp && mv /tmp/${NAMEPROG}_${NAMEFILE1}.tmp $NAMEFILE1
 											done & PID=$!								
 											i=0 &
 											while kill -0 $PID 2>/dev/null; do
@@ -369,7 +370,7 @@ while true; do
 								for i in $(seq 0 24) ; do
 									A="${NCNAMES[$i]}"
 									B="${CHRNAMES[$i]}"
-									awk 'BEGIN{FS="\t"; OFS="\t"}{split($1, subfield, "."); if (subfield[1]=="'$A'") print "'$B'", $2, $3, $4, $5, $6, $7, $8, $9; else print $0}'  $NAMEFILE1 > /tmp/${NAMEPROG##*/}_${NAMEFILE1}.tmp && mv /tmp/${NAMEPROG##*/}_${NAMEFILE1}.tmp $NAMEFILE1
+									awk 'BEGIN{FS="\t"; OFS="\t"}{split($1, subfield, "."); if (subfield[1]=="'$A'") print "'$B'", $2, $3, $4, $5, $6, $7, $8, $9; else print $0}'  $NAMEFILE1 > /tmp/${NAMEPROG}_${NAMEFILE1}.tmp && mv /tmp/${NAMEPROG}_${NAMEFILE1}.tmp $NAMEFILE1
 								done & PID=$!								
 								i=0 &
 								while kill -0 $PID 2>/dev/null; do
@@ -531,7 +532,7 @@ while true; do
 							case $ANSWER in
 								[yY]|[yY][eE][sS]|"" )
 									printf "${ORANGE}WARNING:${NOCOLOR} the file sould have a gff3 structure of attributes (column 9) as follow: XX=XX1;XX=XX;etc...\n\n"
-									cut -f9 $DATA | sed -e 's/\;/	/g' > /tmp/${NAMEPROG##*/}_attributes.tmp & PID=$!
+									cut -f9 $DATA | sed -e 's/\;/	/g' > /tmp/${NAMEPROG}_attributes.tmp & PID=$!
 									i=0 &
 									while kill -0 $PID 2>/dev/null; do
 										i=$(( (i+1) %4 ))
@@ -539,29 +540,29 @@ while true; do
 										sleep .1
 									done
 									printf "\n\n"
-									MAXNUMCOL=$(awk 'BEGIN{FS="\t"}{print NF}' /tmp/${NAMEPROG##*/}_attributes.tmp | sort -n | sed -n '$p')
-									if [[ $(grep "gene_biotype" /tmp/${NAMEPROG##*/}_attributes.tmp | wc -l) -eq 0 ]]; then
+									MAXNUMCOL=$(awk 'BEGIN{FS="\t"}{print NF}' /tmp/${NAMEPROG}_attributes.tmp | sort -n | sed -n '$p')
+									if [[ $(grep "gene_biotype" /tmp/${NAMEPROG}_attributes.tmp | wc -l) -eq 0 ]]; then
 										printf "${ORANGE}WARNING:${NOCOLOR} The attributes of the genes in the file do not present 'gene_biotype'!\n.Promoters region will be extract from all the genes in the file\n\n"
 										break
 									fi
 									for (( i = 1; i < ${MAXNUMCOL}+1; i++ )); do
-										grep "gene_biotype" /tmp/${NAMEPROG##*/}_attributes.tmp | awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); if (subfield[1]=="gene_biotype") print subfield[2]}' >> /tmp/${NAMEPROG##*/}_gene_biotype.tmp
+										grep "gene_biotype" /tmp/${NAMEPROG}_attributes.tmp | awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); if (subfield[1]=="gene_biotype") print subfield[2]}' >> /tmp/${NAMEPROG}_gene_biotype.tmp
 									done
-									sed -i -e '/^$/d' /tmp/${NAMEPROG##*/}_gene_biotype.tmp
-									sort /tmp/${NAMEPROG##*/}_${ATTOSORT}.tmp | uniq > /tmp/${NAMEPROG##*/}_gene_biotype_uniq.tmp
-									rm /tmp/${NAMEPROG##*/}_attributes.tmp
-									if [[ $(cat /tmp/${NAMEPROG##*/}_gene_biotype_uniq.tmp | wc -l) -eq 0 ]]; then
+									sed -i -e '/^$/d' /tmp/${NAMEPROG}_gene_biotype.tmp
+									sort /tmp/${NAMEPROG}_${ATTOSORT}.tmp | uniq > /tmp/${NAMEPROG}_gene_biotype_uniq.tmp
+									rm /tmp/${NAMEPROG}_attributes.tmp
+									if [[ $(cat /tmp/${NAMEPROG}_gene_biotype_uniq.tmp | wc -l) -eq 0 ]]; then
 										printf "${ORANGE}WARNING:${NOCOLOR} The genes of your file present only 1 gene_biotype without_character!\n.Promoters region will be extract from all the genes in the file\n\n"
 										break
-									elif [[ $(cat /tmp/${NAMEPROG##*/}_gene_biotype_uniq.tmp | wc -l) -eq 1 ]]; then
-										printf "${ORANGE}WARNING:${NOCOLOR} The genes of your file present only 1 gene_biotype: "$(cat /tmp/${NAMEPROG##*/}_gene_biotype_uniq.tmp)". You do not need to sort a specific gene_biotype.\n\n"
+									elif [[ $(cat /tmp/${NAMEPROG}_gene_biotype_uniq.tmp | wc -l) -eq 1 ]]; then
+										printf "${ORANGE}WARNING:${NOCOLOR} The genes of your file present only 1 gene_biotype: "$(cat /tmp/${NAMEPROG}_gene_biotype_uniq.tmp)". You do not need to sort a specific gene_biotype.\n\n"
 										break
 									fi
 									while true; do
-										printf "%s\n" "This are unique contents of 'gene_biotype' present in the file:" "" "Number	type_of_gene_biotype" "$(sort /tmp/${NAMEPROG##*/}_gene_biotype.tmp | uniq -c)" ""									
-										NUMOFGENEBIOTYPE=$(cat /tmp/${NAMEPROG##*/}_gene_biotype_uniq.tmp | wc -l)
+										printf "%s\n" "This are unique contents of 'gene_biotype' present in the file:" "" "Number	type_of_gene_biotype" "$(sort /tmp/${NAMEPROG}_gene_biotype.tmp | uniq -c)" ""									
+										NUMOFGENEBIOTYPE=$(cat /tmp/${NAMEPROG}_gene_biotype_uniq.tmp | wc -l)
 										for (( i = 1; i < ${NUMOFGENEBIOTYPE} + 1; i++ )); do
-											eval LISTGENBIOTYPE[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG##*/}_gene_biotype_uniq.tmp)"
+											eval LISTGENBIOTYPE[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG}_gene_biotype_uniq.tmp)"
 										done
 										printf "By which sub-attribute of '${ATTOSORT}' do you want to sort?\n"
 										read ANSWER
@@ -614,8 +615,8 @@ while true; do
 											printf "%s\n" "" "The sub-attribute of gene_biotype that you wrote is not find in the file." ""
 										fi
 									done
-									rm /tmp/${NAMEPROG##*/}_gene_biotype.tmp
-									rm /tmp/${NAMEPROG##*/}_gene_biotype_uniq.tmp
+									rm /tmp/${NAMEPROG}_gene_biotype.tmp
+									rm /tmp/${NAMEPROG}_gene_biotype_uniq.tmp
 									DATA=${NAMEFILE1}									
 									break;;
 								[nN]|[nN][oO] )
@@ -674,10 +675,10 @@ while true; do
 				fi
 				DATA=${NAMEFILE2}
 			else
-				awk 'BEGIN{FS="\t"; OFS=" "}{if ($4!=$5) print "Error line", NR}' $DATA > /tmp/${NAMEPROG##*/}_TSS_error.tmp
-				if [[ $(cat /tmp/${NAMEPROG##*/}_TSS_error.tmp | wc -l) -gt 0 ]]; then
+				awk 'BEGIN{FS="\t"; OFS=" "}{if ($4!=$5) print "Error line", NR}' $DATA > /tmp/${NAMEPROG}_TSS_error.tmp
+				if [[ $(cat /tmp/${NAMEPROG}_TSS_error.tmp | wc -l) -gt 0 ]]; then
 					printf "\n${RED}Error:${NOCOLOR} one of your sequence presente TSS with a 'start' different to 'end':\nPlease check the TSS at the line:\n"
-					cat /tmp/${NAMEPROG##*/}_TSS_error.tmp
+					cat /tmp/${NAMEPROG}_TSS_error.tmp
 					break
 				else
 					printf "\nThe unique type of region of the file is already ${REGION}, TSSs do not need to be extract from ${GREEN}${DATA##*/}${NOCOLOR}\n"
@@ -746,30 +747,30 @@ while true; do
 		if [[ t -eq 3 ]]; then
 			printf "\033c"
 			printf "%s\n" "" "" "This are sources present in the file:" "" "Number_of_line	Source" "$(cut -f2 $DATA | sort | uniq -c)" "" &
-			cut -f2 $DATA | sort | uniq | sed 's/ /_/g' > /tmp/${NAMEPROG##*/}_sources.tmp & PID=$!
+			cut -f2 $DATA | sort | uniq | sed 's/ /_/g' > /tmp/${NAMEPROG}_sources.tmp & PID=$!
 			i=0 &
 			while kill -0 $PID 2>/dev/null; do
 				i=$(( (i+1) %4 ))
 				printf "\rLooking for sources present in the file ${SPIN:$i:1}"
 				sleep .1
 			done
-			if [[ $(awk '/^$/ {x += 1};END {print x }' /tmp/${NAMEPROG##*/}_sources.tmp) -ge 1 ]]; then
+			if [[ $(awk '/^$/ {x += 1};END {print x }' /tmp/${NAMEPROG}_sources.tmp) -ge 1 ]]; then
 				printf "\n${ORANGE}WARNING:${NOCOLOR} 1 of the source does not present character!\nIf you want to sort this source please enter 'without_character'\n\n"
 			fi
-			if [[ $(wc -l /tmp/${NAMEPROG##*/}_sources.tmp) = "1 /tmp/${NAMEPROG##*/}_sources.tmp" ]]; then
+			if [[ $(wc -l /tmp/${NAMEPROG}_sources.tmp) = "1 /tmp/${NAMEPROG}_sources.tmp" ]]; then
 				printf "\033c"
 				printf "%s\n" "Only 1 source has been found in the file." "You do not need to sort the file by the database source." ""
-				if [[ $(awk '/^$/ {x += 1};END {print x }' /tmp/${NAMEPROG##*/}_sources.tmp) -ge 1 ]]; then
+				if [[ $(awk '/^$/ {x += 1};END {print x }' /tmp/${NAMEPROG}_sources.tmp) -ge 1 ]]; then
 					printf "${ORANGE}WARNING:${NOCOLOR} the only source of the file does not present character!\n"
 				fi
 				break
 			else
-				NUMOFSOURCES=$(cat /tmp/${NAMEPROG##*/}_sources.tmp | wc -l)
+				NUMOFSOURCES=$(cat /tmp/${NAMEPROG}_sources.tmp | wc -l)
 				for (( i = 1; i < ${NUMOFSOURCES} + 1; i++ )); do
-					eval LISTSOURCES[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG##*/}_sources.tmp)"
+					eval LISTSOURCES[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG}_sources.tmp)"
 				done
 			fi
-			rm /tmp/${NAMEPROG##*/}_sources.tmp
+			rm /tmp/${NAMEPROG}_sources.tmp
 			while true; do
 				printf "\nBy which source do you want to sort? (If the source name present space ' ', please use '_' instead)\n"
 				read ANSWER
@@ -789,9 +790,9 @@ while true; do
 					if [[ $sourcewithoutcharacter -eq 1 ]]; then
 						SOURCETOSORT2=""
 					else
-						printf $SOURCETOSORT > /tmp/${NAMEPROG##*/}_sourcetosort.tmp
-						SOURCETOSORT2="$(sed 's/_/ /g' /tmp/${NAMEPROG##*/}_sourcetosort.tmp)"
-						rm /tmp/${NAMEPROG##*/}_sourcetosort.tmp
+						printf $SOURCETOSORT > /tmp/${NAMEPROG}_sourcetosort.tmp
+						SOURCETOSORT2="$(sed 's/_/ /g' /tmp/${NAMEPROG}_sourcetosort.tmp)"
+						rm /tmp/${NAMEPROG}_sourcetosort.tmp
 					fi
 					NAMEFILE=${NAMEDATA%%.*}_${SOURCETOSORT}SourceSorted.$EXTENSION
 					if [[ -f $NAMEFILE ]]; then
@@ -855,30 +856,30 @@ while true; do
 		if [[ t -eq 4 ]]; then
 			printf "\033c"
 			printf "%s\n" "" "" "This are regions present in the file:" "" "Number_of_line	Region" "$(cut -f3 $DATA | sort | uniq -c)" "" &
-			cut -f3 $DATA  | sort | uniq | sed 's/ /_/g' > /tmp/${NAMEPROG##*/}_regions.tmp & PID=$!
+			cut -f3 $DATA  | sort | uniq | sed 's/ /_/g' > /tmp/${NAMEPROG}_regions.tmp & PID=$!
 			i=0 &
 			while kill -0 $PID 2>/dev/null; do
 				i=$(( (i+1) %4 ))
 				printf "\rLooking for region features present in the file ${SPIN:$i:1}"
 				sleep .1
 			done
-			if [[ $( cat /tmp/${NAMEPROG##*/}_regions.tmp | wc -l) -eq 1 ]]; then
+			if [[ $( cat /tmp/${NAMEPROG}_regions.tmp | wc -l) -eq 1 ]]; then
 				printf "\033c"
 				printf "%s\n" "Only 1 region has been found in the file." "You do not need to sort the file by region." ""
-				if [[ $(awk '/^$/ {x += 1};END {print x }' /tmp/${NAMEPROG##*/}_regions.tmp) -ge 1 ]]; then
+				if [[ $(awk '/^$/ {x += 1};END {print x }' /tmp/${NAMEPROG}_regions.tmp) -ge 1 ]]; then
 					printf "${ORANGE}WARNING:${NOCOLOR} the only region of the file does not present character!\n"
 				fi
 				break
 			else
-				NUMOFREGIONS=$(cat /tmp/${NAMEPROG##*/}_regions.tmp | wc -l)
+				NUMOFREGIONS=$(cat /tmp/${NAMEPROG}_regions.tmp | wc -l)
 				for (( i = 1; i < ${NUMOFREGIONS} + 1; i++ )); do
-					eval LISTREGIONS[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG##*/}_regions.tmp)"
+					eval LISTREGIONS[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG}_regions.tmp)"
 				done
 			fi
-			if [[ $(awk '/^$/ {x += 1};END {print x }' /tmp/${NAMEPROG##*/}_regions.tmp) -ge 1 ]]; then
+			if [[ $(awk '/^$/ {x += 1};END {print x }' /tmp/${NAMEPROG}_regions.tmp) -ge 1 ]]; then
 				printf "\n${ORANGE}WARNING:${NOCOLOR} 1 of the region does not present character!\nIf you want to sort this region please enter 'without_character'\n\n"
 			fi
-			rm /tmp/${NAMEPROG##*/}_regions.tmp
+			rm /tmp/${NAMEPROG}_regions.tmp
 			while true; do
 				printf "By which region do you want to sort? (If the region name present space ' ', please use '_' instead)\n"
 				read ANSWER
@@ -898,9 +899,9 @@ while true; do
 					if [[ $regonwithoutcharacter -eq 1 ]]; then
 						REGIONTOSORT2=""
 					else
-						printf $REGIONTOSORT > /tmp/${NAMEPROG##*/}_regiontosort.tmp
-						REGIONTOSORT2="$(sed 's/_/ /g' /tmp/${NAMEPROG##*/}_regiontosort.tmp)"
-						rm /tmp/${NAMEPROG##*/}_regiontosort.tmp
+						printf $REGIONTOSORT > /tmp/${NAMEPROG}_regiontosort.tmp
+						REGIONTOSORT2="$(sed 's/_/ /g' /tmp/${NAMEPROG}_regiontosort.tmp)"
+						rm /tmp/${NAMEPROG}_regiontosort.tmp
 					fi
 					NAMEFILE=${NAMEDATA%%.*}_${REGIONTOSORT}RegionSorted.$EXTENSION
 					if [[ -f $NAMEFILE ]]; then
@@ -964,7 +965,7 @@ while true; do
 		if [[ t -eq 5 ]]; then
 			printf "\033c"
 			printf "${ORANGE}WARNING:${NOCOLOR} the file sould have a gff3 structure of attributes (column 9) as follow: XX=XX1;XX=XX;etc...\n\n"
-			cut -f9 $DATA | sed -e 's/\;/	/g' > /tmp/${NAMEPROG##*/}_attributes0.tmp & PID=$!
+			cut -f9 $DATA | sed -e 's/\;/	/g' > /tmp/${NAMEPROG}_attributes0.tmp & PID=$!
 			i=0 &
 			while kill -0 $PID 2>/dev/null; do
 				i=$(( (i+1) %4 ))
@@ -972,28 +973,28 @@ while true; do
 				sleep .1
 			done
 			printf "\n\n"
-			MAXNUMCOL=$(awk 'BEGIN{FS="\t"}{print NF}' /tmp/${NAMEPROG##*/}_attributes0.tmp | sort -n | sed -n '$p')
+			MAXNUMCOL=$(awk 'BEGIN{FS="\t"}{print NF}' /tmp/${NAMEPROG}_attributes0.tmp | sort -n | sed -n '$p')
 			printf "${MAXNUMCOL} attributes max per line have been found in the file\n\n"
 			for (( i = 1; i < ${MAXNUMCOL}+1; i++ )); do
-				awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); print subfield[1]}' /tmp/${NAMEPROG##*/}_attributes0.tmp >> /tmp/${NAMEPROG##*/}_attributes1.tmp
+				awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); print subfield[1]}' /tmp/${NAMEPROG}_attributes0.tmp >> /tmp/${NAMEPROG}_attributes1.tmp
 				printf "\rRecovering of the attribute n°${i}"
 			done
 			printf "\n"
-			sed -i -e '/^$/d' /tmp/${NAMEPROG##*/}_attributes1.tmp
-			sort /tmp/${NAMEPROG##*/}_attributes1.tmp | uniq -c > /tmp/${NAMEPROG##*/}_numattributes.tmp &
-			sort /tmp/${NAMEPROG##*/}_attributes1.tmp | uniq > /tmp/${NAMEPROG##*/}_attributes2.tmp & PID=$!
+			sed -i -e '/^$/d' /tmp/${NAMEPROG}_attributes1.tmp
+			sort /tmp/${NAMEPROG}_attributes1.tmp | uniq -c > /tmp/${NAMEPROG}_numattributes.tmp &
+			sort /tmp/${NAMEPROG}_attributes1.tmp | uniq > /tmp/${NAMEPROG}_attributes2.tmp & PID=$!
 			i=0 &
 			while kill -0 $PID 2>/dev/null; do
 				i=$(( (i+1) %4 ))
 				printf "\rChecking the number of attributes in the file ${SPIN:$i:1}"
 				sleep .1
 			done
-			rm /tmp/${NAMEPROG##*/}_attributes1.tmp
+			rm /tmp/${NAMEPROG}_attributes1.tmp
 			s=0
 			while true; do
 				while true; do
 					e=0
-					printf "%s\n" "" "" "This are attributes present in the file:" "" "Number	Attribute" "$(cat /tmp/${NAMEPROG##*/}_numattributes.tmp)" ""
+					printf "%s\n" "" "" "This are attributes present in the file:" "" "Number	Attribute" "$(cat /tmp/${NAMEPROG}_numattributes.tmp)" ""
 					printf "Do you want to extract the list of content from 1 attribute or do you want to sort by one of them? (E/s)\n"
 					read ANSWER
 					printf "\n"
@@ -1001,10 +1002,10 @@ while true; do
 						[eE]|[eE][xX][tT][rR][aA][cC][tT] )
 							while true; do
 								printf "\033c"
-								printf "%s\n" "This are attributes present in the file:" "" "Number	Attribute" "$(cat /tmp/${NAMEPROG##*/}_numattributes.tmp)" ""
-								NUMOFATTRIBUTE=$(cat /tmp/${NAMEPROG##*/}_attributes2.tmp | wc -l)
+								printf "%s\n" "This are attributes present in the file:" "" "Number	Attribute" "$(cat /tmp/${NAMEPROG}_numattributes.tmp)" ""
+								NUMOFATTRIBUTE=$(cat /tmp/${NAMEPROG}_attributes2.tmp | wc -l)
 								for (( i = 1; i < ${NUMOFATTRIBUTE} + 1; i++ )); do
-									eval LISTATTRIBUTE[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG##*/}_attributes2.tmp)"
+									eval LISTATTRIBUTE[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG}_attributes2.tmp)"
 								done
 								printf "Which attribute do you want to extract?\n"
 								read ANSWER
@@ -1023,7 +1024,7 @@ while true; do
 											case $ANSWER in
 												[yY][eE][sS]|[yY]|"" ) 
 													for (( i = 1; i < ${MAXNUMCOL}+1; i++ )); do
-														grep $ATTOEXTRACT /tmp/${NAMEPROG##*/}_attributes0.tmp | awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); if (subfield[1]=="'${ATTOEXTRACT}'") print subfield[2]}' >> $NAMEFILE1
+														grep $ATTOEXTRACT /tmp/${NAMEPROG}_attributes0.tmp | awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); if (subfield[1]=="'${ATTOEXTRACT}'") print subfield[2]}' >> $NAMEFILE1
 													done
 													printf "\nThe list (${GREEN}${NAMEFILE1}${NOCOLOR}) of all content of the attribute '${ATTOEXTRACT}' has been overwritten.\n"
 													break;;
@@ -1036,7 +1037,7 @@ while true; do
 										done
 									else
 										for (( i = 1; i < ${MAXNUMCOL}+1; i++ )); do
-											grep $ATTOEXTRACT /tmp/${NAMEPROG##*/}_attributes0.tmp | awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); if (subfield[1]=="'${ATTOEXTRACT}'") print subfield[2]}' >> $NAMEFILE1
+											grep $ATTOEXTRACT /tmp/${NAMEPROG}_attributes0.tmp | awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); if (subfield[1]=="'${ATTOEXTRACT}'") print subfield[2]}' >> $NAMEFILE1
 										done
 										printf "\nThe list (${GREEN}${NAMEFILE1}${NOCOLOR}) of all content of the attribute '${ATTOEXTRACT}' has been created.\n"
 									fi
@@ -1109,10 +1110,10 @@ while true; do
 						[sS]|[sS][oO][rR][tT] )
 							while true; do
 								printf "\033c"
-								printf "%s\n" "This are attributes present in the file:" "" "Number	Attribute" "$(cat /tmp/${NAMEPROG##*/}_numattributes.tmp)" ""
-								NUMOFATTRIBUTE=$(cat /tmp/${NAMEPROG##*/}_attributes2.tmp | wc -l)
+								printf "%s\n" "This are attributes present in the file:" "" "Number	Attribute" "$(cat /tmp/${NAMEPROG}_numattributes.tmp)" ""
+								NUMOFATTRIBUTE=$(cat /tmp/${NAMEPROG}_attributes2.tmp | wc -l)
 								for (( i = 1; i < ${NUMOFATTRIBUTE} + 1; i++ )); do
-									eval LISTATTRIBUTE[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG##*/}_attributes2.tmp)"
+									eval LISTATTRIBUTE[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG}_attributes2.tmp)"
 								done
 								printf "Which attribute do you want to sort?\n"
 								read ANSWER
@@ -1122,7 +1123,7 @@ while true; do
 									fi
 								done
 								if [[ ! -z $ATTOSORT ]]; then
-									if [[ $(grep "${ATTOSORT}=" /tmp/${NAMEPROG##*/}_attributes0.tmp | wc -l) -eq $(cat /tmp/${NAMEPROG##*/}_attributes0.tmp | wc -l ) ]]; then
+									if [[ $(grep "${ATTOSORT}=" /tmp/${NAMEPROG}_attributes0.tmp | wc -l) -eq $(cat /tmp/${NAMEPROG}_attributes0.tmp | wc -l ) ]]; then
 										printf "\nThe chosen attribute is present on all line of the file!\n"
 										while true; do
 											printf "%s\n" "" "Do you to explore the content of '${ATTOSORT}'? (Y/n)" 
@@ -1131,30 +1132,30 @@ while true; do
 											case $ANSWER in
 												[yY]|[yY][eE][sS]|"" )
 													for (( i = 1; i < ${MAXNUMCOL}+1; i++ )); do
-														grep ${ATTOSORT} /tmp/${NAMEPROG##*/}_attributes0.tmp | awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); if (subfield[1]=="'${ATTOSORT}'") print subfield[2]}' >> /tmp/${NAMEPROG##*/}_${ATTOSORT}.tmp
+														grep ${ATTOSORT} /tmp/${NAMEPROG}_attributes0.tmp | awk 'BEGIN{FS="\t"}{split($'$i', subfield, "="); if (subfield[1]=="'${ATTOSORT}'") print subfield[2]}' >> /tmp/${NAMEPROG}_${ATTOSORT}.tmp
 													done
-													if [[ $(cat /tmp/${NAMEPROG##*/}_${ATTOSORT}.tmp | uniq | wc -l) -eq $(cat /tmp/${NAMEPROG##*/}_attributes0.tmp | wc -l) ]]; then
+													if [[ $(cat /tmp/${NAMEPROG}_${ATTOSORT}.tmp | uniq | wc -l) -eq $(cat /tmp/${NAMEPROG}_attributes0.tmp | wc -l) ]]; then
 														printf "\033c"
 														printf "All content of '${ATTOSORT}' seem to be unique \nUse the attribute extraction to obtain the list of the content of '${ATTOSORT}'."
 														
 														#Ajout la fonction récupe des noms comme id=idXX
-													elif [[ $(uniq /tmp/${NAMEPROG##*/}_gene_biotype.tmp | wc -l) -eq 0 ]]; then
+													elif [[ $(uniq /tmp/${NAMEPROG}_gene_biotype.tmp | wc -l) -eq 0 ]]; then
 														printf "\033c"
 														printf "${ORANGE}WARNING:${NOCOLOR} Only 1 type of sub-attribute of '${ATTOSORT}' has been found in the file, but it does have any charater!\nPlease use an other attribute to sort.\n"
-													elif [[ $(cat /tmp/${NAMEPROG##*/}_${ATTOSORT}.tmp | uniq | wc -l) -eq 1 ]]; then
+													elif [[ $(cat /tmp/${NAMEPROG}_${ATTOSORT}.tmp | uniq | wc -l) -eq 1 ]]; then
 														printf "\033c"
 														printf "Only 1 type of sub-attribute of '${ATTOSORT}' has been found in the file!\n"
-														UNIQLINE="$(sed -n '1p' /tmp/${NAMEPROG##*/}_${ATTOSORT}.tmp)"
+														UNIQLINE="$(sed -n '1p' /tmp/${NAMEPROG}_${ATTOSORT}.tmp)"
 														NAMEFILE=${NAMEDATA%%.*}_${ATTOSORT}Attributes_${UNIQLINE}Uniq.${EXTENSION}
 														cp $DATA $NAMEFILE
 														printf "A copy of the file has been created with the name: ${GREEN}${NAMEFILE}${NOCOLOR}"
 													else														
 														while true; do
-															printf "%s\n" "This are unique content of '${ATTOSORT}' present in the file:" "" "Number	type_of_${ATTOSORT}" "$(sort /tmp/${NAMEPROG##*/}_${ATTOSORT}.tmp | uniq -c)" ""
-															sort /tmp/${NAMEPROG##*/}_${ATTOSORT}.tmp | uniq > /tmp/${NAMEPROG##*/}_${ATTOSORT}uniq.tmp
-															NUMOFSUBATTRIBUTE=$(cat /tmp/${NAMEPROG##*/}_${ATTOSORT}uniq.tmp | wc -l)
+															printf "%s\n" "This are unique content of '${ATTOSORT}' present in the file:" "" "Number	type_of_${ATTOSORT}" "$(sort /tmp/${NAMEPROG}_${ATTOSORT}.tmp | uniq -c)" ""
+															sort /tmp/${NAMEPROG}_${ATTOSORT}.tmp | uniq > /tmp/${NAMEPROG}_${ATTOSORT}uniq.tmp
+															NUMOFSUBATTRIBUTE=$(cat /tmp/${NAMEPROG}_${ATTOSORT}uniq.tmp | wc -l)
 															for (( i = 1; i < ${NUMOFSUBATTRIBUTE} + 1; i++ )); do
-																eval LISTSUBATTRIBUTE[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG##*/}_${ATTOSORT}uniq.tmp)"
+																eval LISTSUBATTRIBUTE[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG}_${ATTOSORT}uniq.tmp)"
 															done
 															printf "By which sub-attribute of '${ATTOSORT}' do you want to sort?\n"
 															read ANSWER
@@ -1208,9 +1209,9 @@ while true; do
 																printf "%s\n" "" "The sub-attribute that you wrote is not find in the file." ""
 															fi
 														done
-														rm /tmp/${NAMEPROG##*/}_${ATTOSORT}uniq.tmp
+														rm /tmp/${NAMEPROG}_${ATTOSORT}uniq.tmp
 													fi													
-													rm /tmp/${NAMEPROG##*/}_${ATTOSORT}.tmp													
+													rm /tmp/${NAMEPROG}_${ATTOSORT}.tmp													
 													s=1
 													break
 													;;
@@ -1300,9 +1301,9 @@ while true; do
 					break
 				fi
 			done
-			rm /tmp/${NAMEPROG##*/}_attributes2.tmp
-			rm /tmp/${NAMEPROG##*/}_numattributes.tmp
-			rm /tmp/${NAMEPROG##*/}_attributes0.tmp
+			rm /tmp/${NAMEPROG}_attributes2.tmp
+			rm /tmp/${NAMEPROG}_numattributes.tmp
+			rm /tmp/${NAMEPROG}_attributes0.tmp
 			((r++))
 			if [[ $s -eq 1 ]]; then
 				question_end
@@ -1432,7 +1433,7 @@ while true; do
 				printf "\n"
 				case $ANSWER in
 					[yY]|[yY][eE][sS]|"" )
-						cut '-f4,5,7' $DATA | uniq -d | sed 's/	/_/g' > /tmp/${NAMEPROG##*/}_duplicate.tmp & PID=$!
+						cut '-f4,5,7' $DATA | uniq -d | sed 's/	/_/g' > /tmp/${NAMEPROG}_duplicate.tmp & PID=$!
 						i=0 &
 						while kill -0 $PID 2>/dev/null; do
 							i=$(( (i+1) %4 ))
@@ -1442,7 +1443,7 @@ while true; do
 						STRAND="StrandDep"
 						break;;
 					[nN]|[nN][oO] )
-						cut '-f4,5' $DATA | uniq -d | sed 's/	/_/g' > /tmp/${NAMEPROG##*/}_duplicate.tmp & PID=$!
+						cut '-f4,5' $DATA | uniq -d | sed 's/	/_/g' > /tmp/${NAMEPROG}_duplicate.tmp & PID=$!
 						i=0 &
 						while kill -0 $PID 2>/dev/null; do
 							i=$(( (i+1) %4 ))
@@ -1457,14 +1458,14 @@ while true; do
 						;;
 				esac
 			done
-			NUMDUP=$(cat /tmp/${NAMEPROG##*/}_duplicate.tmp | wc -l | sed 's/ //g')
+			NUMDUP=$(cat /tmp/${NAMEPROG}_duplicate.tmp | wc -l | sed 's/ //g')
 			for (( i = 1; i < ${NUMDUP} + 1; i++ )); do
-				eval LISTDUP[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG##*/}_duplicate.tmp | cut -d_ '-f1,2')"
+				eval LISTDUP[$i-1]="$(sed -n $i'p' /tmp/${NAMEPROG}_duplicate.tmp | cut -d_ '-f1,2')"
 			done
 			if [[ $NUMDUP -eq 0 ]]; then
 				printf "\033c"
 				printf "${GREEN}The file does not present duplicate sequence!${NOCOLOR}\n\n"
-				rm /tmp/${NAMEPROG##*/}_duplicate.tmp
+				rm /tmp/${NAMEPROG}_duplicate.tmp
 				break
 			elif [[ $NUMDUP -eq 1 ]]; then
 				printf "\n\nThe file present ${RED}${NUMDUP}${NOCOLOR} duplicated line.\n\n"
@@ -1487,7 +1488,7 @@ while true; do
 									[yY][eE][sS]|[yY]|"" ) 
 									cp $DATA $NAMEFILE
 									for (( i = 0; i < ${NUMDUP}; i++ )); do
-										grep -n -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | cut -d':' -f1 | sed '1d' >> /tmp/${NAMEPROG##*/}_lineToDel.tmp
+										grep -n -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | cut -d':' -f1 | sed '1d' >> /tmp/${NAMEPROG}_lineToDel.tmp
 									done & PID=$!
 									i=0 &
 									while kill -0 $PID 2>/dev/null; do
@@ -1496,8 +1497,8 @@ while true; do
 										sleep .1
 									done
 									k=0
-									for (( i = 1; i < $(cat /tmp/${NAMEPROG##*/}_lineToDel.tmp | wc -l) + 1; i++ )); do
-										LINETODEL=$(sed -n $i'p' /tmp/${NAMEPROG##*/}_lineToDel.tmp)
+									for (( i = 1; i < $(cat /tmp/${NAMEPROG}_lineToDel.tmp | wc -l) + 1; i++ )); do
+										LINETODEL=$(sed -n $i'p' /tmp/${NAMEPROG}_lineToDel.tmp)
 										eval LINETODEL=$((${LINETODEL}-${k}))
 										sed -i -e $LINETODEL'd' $NAMEFILE
 										((k++))
@@ -1520,7 +1521,7 @@ while true; do
 						else
 							cp $DATA $NAMEFILE
 							for (( i = 0; i < ${NUMDUP}; i++ )); do
-								grep -n -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | cut -d':' -f1 | sed '1d' >> /tmp/${NAMEPROG##*/}_lineToDel.tmp
+								grep -n -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | cut -d':' -f1 | sed '1d' >> /tmp/${NAMEPROG}_lineToDel.tmp
 							done & PID=$!
 							i=0 &
 							while kill -0 $PID 2>/dev/null; do
@@ -1529,8 +1530,8 @@ while true; do
 								sleep .1
 							done
 							k=0
-							for (( i = 1; i < $(cat /tmp/${NAMEPROG##*/}_lineToDel.tmp | wc -l) + 1; i++ )); do
-								LINETODEL=$(sed -n $i'p' /tmp/${NAMEPROG##*/}_lineToDel.tmp)
+							for (( i = 1; i < $(cat /tmp/${NAMEPROG}_lineToDel.tmp | wc -l) + 1; i++ )); do
+								LINETODEL=$(sed -n $i'p' /tmp/${NAMEPROG}_lineToDel.tmp)
 								eval LINETODEL=$((${LINETODEL}-${k}))
 								sed -i -e $LINETODEL'd' $NAMEFILE
 								((k++))
@@ -1543,7 +1544,7 @@ while true; do
 							done
 							printf "\n\n${GREEN}${DATA##*/}${NOCOLOR} has been filtered automatically without duplicates.\n\n"
 						fi
-						rm /tmp/${NAMEPROG##*/}_lineToDel.tmp
+						rm /tmp/${NAMEPROG}_lineToDel.tmp
 						break;;
 					[2] )
 						NAMEFILE=${NAMEDATA%%.*}_uniqueSequences${STRAND}ManuallyFiltered.${EXTENSION}
@@ -1558,7 +1559,7 @@ while true; do
 									k=0
 									for (( i = 0; i < ${NUMDUP}; i++ )); do								
 										printf "This are duplicates n°$(($i+1))/${NUMDUP}:\n\n"
-										grep -n -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | cut -d':' -f1 > /tmp/${NAMEPROG##*/}_lineToDel.tmp
+										grep -n -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | cut -d':' -f1 > /tmp/${NAMEPROG}_lineToDel.tmp
 										while true; do
 											grep -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | grep -n ""
 											NUMLINE=$(grep -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | grep -n "" | wc -l)
@@ -1567,10 +1568,10 @@ while true; do
 											printf "\n"
 											case $ANSWER in
 												[$(seq 1 ${NUMLINE})] )
-													sed -i -e ${ANSWER}'d' /tmp/${NAMEPROG##*/}_lineToDel.tmp
-													rm /tmp/${NAMEPROG##*/}_lineToDel.tmp-e
-													for (( t = 1; t < $(cat /tmp/${NAMEPROG##*/}_lineToDel.tmp | wc -l) + 1; t++ )); do
-														LINETODEL=$(sed -n $t'p' /tmp/${NAMEPROG##*/}_lineToDel.tmp)
+													sed -i -e ${ANSWER}'d' /tmp/${NAMEPROG}_lineToDel.tmp
+													rm /tmp/${NAMEPROG}_lineToDel.tmp-e
+													for (( t = 1; t < $(cat /tmp/${NAMEPROG}_lineToDel.tmp | wc -l) + 1; t++ )); do
+														LINETODEL=$(sed -n $t'p' /tmp/${NAMEPROG}_lineToDel.tmp)
 														eval LINETODEL=$((${LINETODEL}-${k}))
 														sed -i -e $LINETODEL'd' $NAMEFILE
 														((k++))
@@ -1598,7 +1599,7 @@ while true; do
 							k=0
 							for (( i = 0; i < ${NUMDUP}; i++ )); do								
 								printf "This are duplicates n°$(($i+1))/${NUMDUP}:\n\n"
-								grep -n -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | cut -d':' -f1 > /tmp/${NAMEPROG##*/}_lineToDel.tmp
+								grep -n -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | cut -d':' -f1 > /tmp/${NAMEPROG}_lineToDel.tmp
 								while true; do
 									grep -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | grep -n ""
 									NUMLINE=$(grep -E "${LISTDUP[$i]##*_}|${LISTDUP[$i]%%_*}" $DATA | grep -n "" | wc -l)
@@ -1607,10 +1608,10 @@ while true; do
 									printf "\n"
 									case $ANSWER in
 										[$(seq 1 ${NUMLINE})] )
-											sed -i -e ${ANSWER}'d' /tmp/${NAMEPROG##*/}_lineToDel.tmp
-											rm /tmp/${NAMEPROG##*/}_lineToDel.tmp-e
-											for (( t = 1; t < $(cat /tmp/${NAMEPROG##*/}_lineToDel.tmp | wc -l) + 1; t++ )); do
-												LINETODEL=$(sed -n $t'p' /tmp/${NAMEPROG##*/}_lineToDel.tmp)
+											sed -i -e ${ANSWER}'d' /tmp/${NAMEPROG}_lineToDel.tmp
+											rm /tmp/${NAMEPROG}_lineToDel.tmp-e
+											for (( t = 1; t < $(cat /tmp/${NAMEPROG}_lineToDel.tmp | wc -l) + 1; t++ )); do
+												LINETODEL=$(sed -n $t'p' /tmp/${NAMEPROG}_lineToDel.tmp)
 												eval LINETODEL=$((${LINETODEL}-${k}))
 												sed -i -e $LINETODEL'd' $NAMEFILE
 												((k++))
@@ -1626,8 +1627,8 @@ while true; do
 							done
 							printf "\n\n${GREEN}${DATA##*/}${NOCOLOR} has been filtered manually without duplicates.\n\n"
 						fi
-						rm /tmp/${NAMEPROG##*/}_lineToDel.tmp
-						rm /tmp/${NAMEPROG##*/}_lineToDel.tmp-e
+						rm /tmp/${NAMEPROG}_lineToDel.tmp
+						rm /tmp/${NAMEPROG}_lineToDel.tmp-e
 						break;;
 					[3] )
 						e=1
@@ -1641,7 +1642,7 @@ while true; do
 			if [[ -f "${NAMEFILE}-e" ]]; then
 				rm "${NAMEFILE}-e"
 			fi
-			rm /tmp/${NAMEPROG##*/}_duplicate.tmp
+			rm /tmp/${NAMEPROG}_duplicate.tmp
 			((r++))
 			if [[ $e -eq 0 ]]; then
 				question_end
@@ -1666,9 +1667,9 @@ while true; do
 						for i in $(seq 0 24) ; do
 							A="${NCNAMES[$i]}"
 							B="${CHRNAMES[$i]}"
-							awk 'BEGIN{FS="\t"; OFS="\t"}{split($1, subfield, "."); if (subfield[1]=="'$A'") print "'$B'", $2, $3; else print $0}' $NAMEBED3 > /tmp/${NAMEPROG##*/}_${NAMEBED3}.tmp && sort -h /tmp/${NAMEPROG##*/}_${NAMEBED3}.tmp > $NAMEBED3
+							awk 'BEGIN{FS="\t"; OFS="\t"}{split($1, subfield, "."); if (subfield[1]=="'$A'") print "'$B'", $2, $3; else print $0}' $NAMEBED3 > /tmp/${NAMEPROG}_${NAMEBED3}.tmp && sort -h /tmp/${NAMEPROG}_${NAMEBED3}.tmp > $NAMEBED3
 						done
-						rm /tmp/${NAMEPROG##*/}_${NAMEBED3}.tmp
+						rm /tmp/${NAMEPROG}_${NAMEBED3}.tmp
 					}
 					waitbed3 () {
 						PID=$!
@@ -1710,9 +1711,9 @@ while true; do
 						for i in $(seq 0 24) ; do
 							A="${NCNAMES[$i]}"
 							B="${CHRNAMES[$i]}"
-							awk 'BEGIN{FS="\t"; OFS="\t"}{split($1, subfield, "."); if (subfield[1]=="'$A'") print "'$B'", $2, $3, $4, $5, $6; else print $0}' $NAMEBED6 > /tmp/${NAMEPROG##*/}_${NAMEBED6}.tmp && sort -h /tmp/${NAMEPROG##*/}_${NAMEBED6}.tmp $NAMEBED6
+							awk 'BEGIN{FS="\t"; OFS="\t"}{split($1, subfield, "."); if (subfield[1]=="'$A'") print "'$B'", $2, $3, $4, $5, $6; else print $0}' $NAMEBED6 > /tmp/${NAMEPROG}_${NAMEBED6}.tmp && sort -h /tmp/${NAMEPROG}_${NAMEBED6}.tmp $NAMEBED6
 						done
-						rm /tmp/${NAMEPROG##*/}_${NAMEBED6}.tmp
+						rm /tmp/${NAMEPROG}_${NAMEBED6}.tmp
 					}
 					waitbed6 () {
 						PID=$!
